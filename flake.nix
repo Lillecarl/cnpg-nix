@@ -39,24 +39,26 @@
         timescaledb_toolkit
       ]);
 
-      ourPkgs = with pkgs; [
-        # debug
+      debugPkgs = with pkgs; [
+        # debug CLI utils
         htop
         binutils
         strace
         lsd
         ripgrep
         fd
+        fish
+        coreutils
+        moreutils
+      ];
+
+      ourPkgs = with pkgs; [
         # Always supply a really shitty bash experience
         bash
         # Locales
         glibcLocales
         # Barman used by CNPG
         barman
-        # CLI utils
-        fish
-        coreutils
-        moreutils
         # Postgres with plugins and stuff
         ourPg
       ];
@@ -108,6 +110,7 @@
           name = "cnpg-nix";
 
           contents = [
+            debugPkgs
             ourPkgs
             pkgs.dockerTools.binSh
             pkgs.dockerTools.caCertificates
