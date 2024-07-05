@@ -1,6 +1,6 @@
-{ lib, stdenv, postgresql }:
+{ stdenv, postgresql }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation {
   pname = "pgmq";
   version = "1.3.3";
 
