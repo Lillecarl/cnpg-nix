@@ -119,6 +119,7 @@
             enableFakechroot = true;
           };
         };
+        pgmq = pkgs.callPackage ./pgmq.nix { };
       };
     };
 }
