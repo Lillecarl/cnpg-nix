@@ -11,6 +11,9 @@
       pg = pkgs.postgresql_16;
       py = pkgs.python3;
 
+      pgmq = pkgs.callPackage ./pgmq.nix { };
+      plprql = pkgs.callPackage ./plprql.nix { };
+
       ourPg = (
         pg.override {
           pythonSupport = true;
@@ -19,7 +22,10 @@
             psycopg2
           ]);
         }).withPackages (ps: with ps; [
-        self.packages.x86_64-linux.pgmq
+        # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
+        # Our own extensions are not, so we need to override postgresql with our version here
+        (pgmq.override { postgresql = pg; })
+        (plprql.override { postgresql = pg; })
         pg_cron
         pg_safeupdate
         pg_similarity
@@ -110,8 +116,9 @@
 
           inherit config;
         };
-        pgmq = pkgs.callPackage ./pgmq.nix { };
-        plprql = pkgs.callPackage ./plprql.nix { };
+
+        inherit pgmq;
+        inherit plprql;
       };
     };
 }
