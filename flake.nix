@@ -3,13 +3,35 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   };
 
-  outputs = { ... }@inputs:
+  outputs = { self, ... }@inputs:
     let
       pkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
       lib = pkgs.lib;
 
       pg = pkgs.postgresql_16;
       py = pkgs.python3;
+
+      ourPg = (
+        pg.override {
+          pythonSupport = true;
+          python3 = py.withPackages (ps: with ps; [
+            numpy
+            psycopg2
+          ]);
+        }).withPackages (ps: with ps; [
+        self.packages.x86_64-linux.pgmq
+        pg_cron
+        pg_safeupdate
+        pg_similarity
+        pg_squeeze
+        pgaudit
+        pgrouting
+        plpgsql_check
+        plv8
+        postgis
+        timescaledb
+        timescaledb_toolkit
+      ]);
 
       ourPkgs = with pkgs; [
         # debug
@@ -29,29 +51,8 @@
         fish
         coreutils
         moreutils
-        # Postgres used by CNPG
-        # With Python support and lots of nice plugins
-        (
-          (pg.override {
-            pythonSupport = true;
-            python3 = py.withPackages (ps: with ps; [
-              numpy
-              psycopg2
-            ]);
-          }).withPackages (ps: with ps; [
-            pg_cron
-            pg_safeupdate
-            pg_similarity
-            pg_squeeze
-            pgaudit
-            pgrouting
-            plpgsql_check
-            plv8
-            postgis
-            timescaledb
-            timescaledb_toolkit
-          ])
-        )
+        # Postgres with plugins and stuff
+        ourPg
       ];
       config = {
         Env = [
@@ -63,61 +64,51 @@
           "PATH=${lib.makeBinPath ourPkgs}:/controller"
         ];
       };
-
-      # This provides the ca bundle in common locations
-      imageBaseArgs = {
-        name = "cnpg-nix-single";
-        runAsRoot = /* bash */ ''
-          # Nix "workarounds"
-
-          # /usr/bin/env
-          mkdir -p /usr/bin
-          ln -s ${pkgs.coreutils}/bin/env /usr/bin/env
-          # /bin/sh
-          mkdir -p /bin
-          ln -s ${pkgs.bashInteractive}/bin/bash /bin/sh
-          # ca certificates
-          mkdir -p /etc/ssl/certs /etc/pki/tls/certs
-          # Old NixOS compatibility.
-          ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
-          # NixOS canonical location + Debian/Ubuntu/Arch/Gentoo compatibility.
-          ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
-          # CentOS/Fedora compatibility.
-          ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt /etc/pki/tls/certs/ca-bundle.crt
-
-          ${pkgs.dockerTools.shadowSetup}
-
-          ${pkgs.shadow}/bin/useradd -u 26 postgres
-          mkdir -p /controller/{log,certificates,run}
-          chown -R postgres /controller
-        '';
-        inherit config;
-      };
+      nonRootShadowSetup = { user, uid, gid ? uid }: with pkgs; [
+        (
+          writeTextDir "etc/shadow" ''
+            root:!x:::::::
+            ${user}:!:::::::
+          ''
+        )
+        (
+          writeTextDir "etc/passwd" ''
+            root:x:0:0::/root:${runtimeShell}
+            ${user}:x:${toString uid}:${toString gid}::/home/${user}:
+          ''
+        )
+        (
+          writeTextDir "etc/group" ''
+            root:x:0:
+            ${user}:x:${toString gid}:
+          ''
+        )
+        (
+          writeTextDir "etc/gshadow" ''
+            root:x::
+            ${user}:x::
+          ''
+        )
+        (
+          writeTextDir "etc/nsswitch.conf" ''
+            hosts: files dns
+          ''
+        )
+      ];
     in
     {
       packages.x86_64-linux = {
-        single = pkgs.dockerTools.buildImage imageBaseArgs // {
-          name = "cnpg-nix-single";
+        default = pkgs.dockerTools.buildLayeredImage {
+          name = "cnpg-nix";
 
-          copyToRoot = with pkgs; [
-            (buildEnv {
-              name = "cnpg-nix-root";
-              paths = ourPkgs;
-              pathsToLink = [ "/bin" ];
-            })
-            # Nix "workarounds"
-            dockerTools.binSh
-            dockerTools.caCertificates
-            dockerTools.fakeNss
-            dockerTools.usrBinEnv
-          ];
+          contents = [
+            ourPkgs
+            pkgs.dockerTools.binSh
+            pkgs.dockerTools.caCertificates
+            pkgs.dockerTools.usrBinEnv
+          ] ++ nonRootShadowSetup { user = "postgres"; uid = 26; };
 
-          layered = pkgs.dockerTools.buildLayeredImage
-            imageBaseArgs // {
-            name = "cnpg-nix-layered";
-            contents = ourPkgs;
-            enableFakechroot = true;
-          };
+          inherit config;
         };
         pgmq = pkgs.callPackage ./pgmq.nix { };
       };
