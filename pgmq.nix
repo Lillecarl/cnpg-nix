@@ -10,6 +10,7 @@ stdenv.mkDerivation rec {
     url = "https://github.com/tembo-io/pgmq.git";
     rev = "9066da119807eb7272c82bc6ee0ecf3ae1674777";
     exportIgnore = false;
+    submodules = true;
   };
 
   makeFlags = [
