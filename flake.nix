@@ -111,6 +111,7 @@
           inherit config;
         };
         pgmq = pkgs.callPackage ./pgmq.nix { };
+        plprql = pkgs.callPackage ./plprql.nix { };
       };
     };
 }
