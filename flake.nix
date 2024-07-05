@@ -55,7 +55,9 @@
       ourPkgs = with pkgs; [
         # Always supply a really shitty bash experience
         bash
-        # Locales
+        # Required by psql
+        less
+        # Locales required to start PG
         glibcLocales
         # Barman used by CNPG
         barman
@@ -90,8 +92,10 @@
           inherit config;
         };
 
-        inherit pgmq;
-        inherit plprql;
+        inherit
+          pgmq
+          plprql
+          ;
       };
     };
 }
