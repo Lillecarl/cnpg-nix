@@ -13,6 +13,11 @@ stdenv.mkDerivation {
     submodules = true;
   };
 
+  # The release after 1.3.3 will require this
+  #postUnpack = ''
+  #  sourceRoot=$sourceRoot/pgmq-extension
+  #'';
+
   makeFlags = [
     "USE_PGXS=1"
     "PG_CONFIG=${postgresql}/bin/pg_config"
