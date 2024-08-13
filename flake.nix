@@ -5,7 +5,16 @@
 
   outputs = { self, ... }@inputs:
     let
-      pkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
+      # nixpkgs instance
+      pkgs = import inputs.nixpkgs {
+        system = "x86_64-linux";
+        # nixpkgs cache doesn't cache unfree packages. Timescale Toolkit is unfree and really slow to build.
+        config.allowUnfree = true;
+        overlays = [
+          (import ./overlays/barman.nix inputs.nixpkgs.lastModified)
+        ];
+      };
+      # shorthand for lib since we don't get it from NixOS modules
       lib = pkgs.lib;
 
       pg = pkgs.postgresql_16;
