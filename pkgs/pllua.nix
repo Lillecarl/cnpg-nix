@@ -2,12 +2,16 @@
 , fetchFromGitHub
 , autoPatchelfHook
 , postgresql
-, lua ? throw "lua is required"
+, lua5_4 ? throw "lua is required"
 }:
 let
   name = "pllua";
   version = "REL_2_0_12";
-  jit = lua.pname == "luajit";
+
+  ourLua = lua5_4.override {
+    version = "5.4.7";
+    hash = "sha256-n79eKO+GxphY9tPTTszDLpEcGii0Eg/z6EqqcM+/HjA=";
+  };
 in
 stdenv.mkDerivation {
   inherit name;
@@ -25,28 +29,14 @@ stdenv.mkDerivation {
     # PGXS only supports installing to postgresql prefix so we need to redirect this
     "DESTDIR=${placeholder "out"}"
     # Lua paths
-    "LUA_INCDIR=${lua}/include"
-    "LUALIB=-L${lua}/lib" # Set where Lua is installed
-  ] ++ (
-    if jit then
-      [
-        "LUAJIT=${lua}/bin/luajit"
-      ]
-    else
-      [
-        "LUAC=${lua}/bin/luac"
-        "LUA=${lua}/bin/lua"
-      ]
-  );
+    "LUA_INCDIR=${ourLua}/include"
+    "LUALIB=-L${ourLua}/lib" # Set where Lua is installed
+    "LUAC=${ourLua}/bin/luac"
+    "LUA=${ourLua}/bin/lua"
+  ];
 
   # Workaround for stupid pllua Makefile
-  NIX_LDFLAGS =
-    if jit then
-      [ "-lluajit-${lua.luaversion}" ]
-    else
-      [
-        "-llua"
-      ];
+  NIX_LDFLAGS = [ "-llua" ];
 
   postInstall = ''
     # Move the redirected to proper directory.
@@ -61,7 +51,7 @@ stdenv.mkDerivation {
   };
 
   propagatedBuildInputs = [
-    lua
+    ourLua
     postgresql
   ];
 

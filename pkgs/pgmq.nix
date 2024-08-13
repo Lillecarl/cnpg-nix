@@ -1,29 +1,29 @@
-{ stdenv, postgresql }:
+{ stdenv
+, fetchFromGitHub
+, autoPatchelfHook
+, postgresql
+}:
+let
+  name = "pgmq";
+  version = "1.4.0";
+in
+stdenv.mkDerivation rec {
+  inherit name;
 
-stdenv.mkDerivation {
-  pname = "pgmq";
-  version = "1.3.3";
-
-  buildInputs = [ postgresql ];
-
-  src = builtins.fetchGit {
-    url = "https://github.com/tembo-io/pgmq.git";
-    rev = "9066da119807eb7272c82bc6ee0ecf3ae1674777";
-    exportIgnore = false;
-    submodules = true;
+  src = fetchFromGitHub {
+    owner = "tembo-io";
+    repo = name;
+    rev = "v${version}";
+    sha256 = "sha256-k7iKp2CZY3M8POUqIOIbKxrofoOfn2FxfVW01KYojPA=";
   };
 
-  # The release after 1.3.3 will require this
-  #postUnpack = ''
-  #  sourceRoot=$sourceRoot/pgmq-extension
-  #'';
+  postUnpack = ''
+    sourceRoot=$sourceRoot/pgmq-extension
+  '';
 
   makeFlags = [
+    # Use PGXS
     "USE_PGXS=1"
-    "PG_CONFIG=${postgresql}/bin/pg_config"
-  ];
-
-  installFlags = [
     # PGXS only supports installing to postgresql prefix so we need to redirect this
     "DESTDIR=${placeholder "out"}"
   ];
@@ -35,6 +35,14 @@ stdenv.mkDerivation {
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
   '';
+
+  propagatedBuildInputs = [
+    postgresql
+  ];
+
+  nativeBuildInputs = [
+    autoPatchelfHook
+  ];
 
   meta = {
     platforms = postgresql.meta.platforms;

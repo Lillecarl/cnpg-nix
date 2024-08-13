@@ -11,9 +11,10 @@
       pg = pkgs.postgresql_16;
       py = pkgs.python3;
 
-      pgmq = pkgs.callPackage ./pgmq.nix { };
+      # pgmq packaged
+      pgmq = pkgs.callPackage ./pkgs/pgmq.nix { };
       # pllua packaged
-      pllua = pkgs.callPackage ./pllua.nix { };
+      pllua = pkgs.callPackage ./pkgs/pllua.nix { };
 
       ourPg = (
         pg.override {
