@@ -12,7 +12,6 @@
       py = pkgs.python3;
 
       pgmq = pkgs.callPackage ./pgmq.nix { };
-      plprql = pkgs.callPackage ./plprql.nix { };
 
       ourPg = (
         pg.override {
@@ -25,7 +24,6 @@
         # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
         # Our own extensions are not, so we need to override postgresql with our version here
         (pgmq.override { postgresql = pg; })
-        (plprql.override { postgresql = pg; })
         pg_cron
         pg_safeupdate
         pg_similarity
