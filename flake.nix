@@ -17,8 +17,15 @@
       # shorthand for lib since we don't get it from NixOS modules
       lib = pkgs.lib;
 
+      # postgres version
       pg = pkgs.postgresql_16;
-      py = pkgs.python3;
+      # clean Python3, postgres will depend on this
+      cleanPy = pkgs.python3;
+      # python3 with packages installed, we just make them available with PYTHONPATH
+      packagePy = pkgs.python3.withPackages (ps: with ps; [
+        numpy
+        psycopg2
+      ]);
 
       # pgmq packaged
       pgmq = pkgs.callPackage ./pkgs/pgmq.nix { };
@@ -28,10 +35,7 @@
       ourPg = (
         pg.override {
           pythonSupport = true;
-          python3 = py.withPackages (ps: with ps; [
-            numpy
-            psycopg2
-          ]);
+          python3 = cleanPy;
         }).withPackages (ps: with ps; [
         # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
         # Our own extensions are not, so we need to override postgresql with our version here
@@ -64,26 +68,31 @@
       ];
 
       ourPkgs = with pkgs; [
-        # Always supply a really shitty bash experience
-        bash
-        # Required by psql
-        less
-        # Locales required to start PG
-        glibcLocales
-        # Barman used by CNPG
-        barman
-        # Postgres with plugins and stuff
-        ourPg
+        ourPg # Postgres with plugins and stuff
+        bash # Always supply a really shitty bash experience
+        less # Required by psql
+        glibcLocales # Locales required to start PG
+        barman # Barman used by CNPG
       ];
       config = {
-        Env = [
-          # Set locale
-          "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
-          # Set user
-          "USER=postgres"
-          # Set PATH (CNPG somehow relies on PATH)
-          "PATH=${lib.makeBinPath ourPkgs}:/controller"
-        ];
+        Env =
+          let
+            # Locations for installed Python packages.
+            pythonPath = [
+              "${packagePy}/lib/${packagePy.libPrefix}"
+              "${packagePy}/lib/${packagePy.libPrefix}/site-packages"
+            ];
+          in
+          [
+            # Set locale
+            "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
+            # Set user
+            "USER=postgres"
+            # Set PATH (CNPG somehow relies on PATH)
+            "PATH=${lib.makeBinPath ourPkgs}:/controller"
+            # Set PYTHONPATH for pl/python
+            "PYTHONPATH=${lib.concatStringsSep ":" pythonPath }"
+          ];
       };
       nonRootShadowSetup = import ./shadow.nix pkgs;
     in
@@ -107,5 +116,8 @@
           pgmq
           ;
       };
+
+      inherit pkgs inputs;
+      inherit (pkgs) lib;
     };
 }
