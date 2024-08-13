@@ -1,7 +1,13 @@
 # Create a minimal set of files in /etc to allow postgres to start
 # The same could be achieved with useradd/groupadd in an impure system
+
 pkgs:
-{ user, uid, gid ? uid }: with pkgs; [
+{ user
+, uid
+, gid ? uid
+}:
+with pkgs; # "using namespace"
+[
   (
     writeTextDir "etc/shadow" ''
       root:!x:::::::

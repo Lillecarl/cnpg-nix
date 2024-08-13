@@ -104,19 +104,26 @@
           contents = [
             debugPkgs
             ourPkgs
-            pkgs.dockerTools.binSh
-            pkgs.dockerTools.caCertificates
-            pkgs.dockerTools.usrBinEnv
-          ] ++ nonRootShadowSetup { user = "postgres"; uid = 26; };
+            pkgs.dockerTools.binSh # links /bin/sh
+            pkgs.dockerTools.caCertificates # links /etc/ssl/certs
+            pkgs.dockerTools.usrBinEnv # links /usr/bin/env
+          ]
+          ++
+          # links /etc/passwd, /etc/group, /etc/gshadow, /etc/nsswitch.conf
+          nonRootShadowSetup {
+            user = "postgres"; # standard
+            uid = 26; # defined by RHEL to be standard
+          };
 
+          # nixpkgs config
           inherit config;
         };
 
-        inherit
-          pgmq
-          ;
+        # Export pgmq as a package
+        inherit pgmq;
       };
 
+      # Export nixpkgs, lib and inputs for troubleshooting with nix repl
       inherit pkgs inputs;
       inherit (pkgs) lib;
     };
