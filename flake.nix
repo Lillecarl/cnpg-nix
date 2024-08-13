@@ -12,6 +12,8 @@
       py = pkgs.python3;
 
       pgmq = pkgs.callPackage ./pgmq.nix { };
+      # pllua packaged
+      pllua = pkgs.callPackage ./pllua.nix { };
 
       ourPg = (
         pg.override {
@@ -24,6 +26,7 @@
         # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
         # Our own extensions are not, so we need to override postgresql with our version here
         (pgmq.override { postgresql = pg; })
+        (pllua.override { postgresql = pg; })
         pg_cron
         pg_safeupdate
         pg_similarity
@@ -92,7 +95,6 @@
 
         inherit
           pgmq
-          plprql
           ;
       };
     };
