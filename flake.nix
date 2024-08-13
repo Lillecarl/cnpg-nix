@@ -16,7 +16,6 @@
       };
       # shorthand for lib since we don't get it from NixOS modules
       lib = pkgs.lib;
-
       # postgres version
       pg = pkgs.postgresql_16;
       # clean Python3, postgres will depend on this
@@ -26,7 +25,6 @@
         numpy
         psycopg2
       ]);
-
       # pgmq packaged
       pgmq = pkgs.callPackage ./pkgs/pgmq.nix { };
       # pllua packaged
