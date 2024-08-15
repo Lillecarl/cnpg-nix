@@ -14,6 +14,7 @@
           (import ./overlays/barman.nix inputs.nixpkgs.lastModified)
         ];
       };
+      dockerUtils = import ./dockerUtils.nix pkgs;
       # shorthand for lib since we don't get it from NixOS modules
       lib = pkgs.lib;
       # postgres version
@@ -30,10 +31,12 @@
       # pllua packaged
       pllua = pkgs.callPackage ./pkgs/pllua.nix { };
 
+      # Our "custom" postgresql with plugins
       ourPg = (
+        # Override to enable Python support
         pg.override {
           pythonSupport = true;
-          python3 = cleanPy;
+          python3 = cleanPy; # Give postgres a clean python3
         }).withPackages (ps: with ps; [
         # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
         # Our own extensions are not, so we need to override postgresql with our version here
@@ -92,7 +95,7 @@
             "PYTHONPATH=${lib.concatStringsSep ":" pythonPath }"
           ];
       };
-      nonRootShadowSetup = import ./shadow.nix pkgs;
+      inherit (import ./dockerUtils.nix pkgs) nonRootShadowSetup;
     in
     {
       packages.x86_64-linux = {
