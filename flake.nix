@@ -10,9 +10,7 @@
         system = "x86_64-linux";
         # nixpkgs cache doesn't cache unfree packages. Timescale Toolkit is unfree and really slow to build.
         config.allowUnfree = true;
-        overlays = [
-          (import ./overlays/barman.nix inputs.nixpkgs.lastModified)
-        ];
+        overlays = [ ];
       };
       dockerUtils = import ./dockerUtils.nix pkgs;
       # shorthand for lib since we don't get it from NixOS modules
