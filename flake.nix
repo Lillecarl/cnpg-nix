@@ -96,7 +96,7 @@
       inherit (import ./dockerUtils.nix pkgs) nonRootShadowSetup;
     in
     {
-      packages.x86_64-linux = {
+      packages.${pkgs.system} = {
         default = pkgs.dockerTools.buildLayeredImage {
           name = "cnpg-nix";
 
