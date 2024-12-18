@@ -16,7 +16,7 @@
       # shorthand for lib since we don't get it from NixOS modules
       lib = pkgs.lib;
       # postgres version
-      pg = pkgs.postgresql_16;
+      pg = pkgs.postgresql_17;
       # clean Python3, postgres will depend on this
       cleanPy = pkgs.python3;
       # python3 with packages installed, we just make them available with PYTHONPATH
