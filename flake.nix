@@ -22,7 +22,7 @@
         # postgres version
         pg = pkgs.postgresql_17;
         # clean Python3, postgres will depend on this
-        cleanPy = pkgs.python3;
+        cleanPy = pkgs.python3Minimal;
         # python3 with packages installed, we just make them available with PYTHONPATH
         packagePy = pkgs.python3.withPackages (
           ps: with ps; [
@@ -35,34 +35,35 @@
         # pllua packaged
         pllua = pkgs.callPackage ./pkgs/pllua.nix { };
 
+        # Override to enable Python support
+        pgPy =
+          (pg.override {
+            pythonSupport = true;
+            python3 = cleanPy; # Give postgres a clean python3
+          }).overrideAttrs
+            (pattrs: {
+              nativeBuildInputs = pattrs.nativeBuildInputs ++ [ cleanPy ];
+            });
         # Our "custom" postgresql with plugins
-        ourPg =
-          (
-            # Override to enable Python support
-            pg.override {
-              pythonSupport = true;
-              python3 = cleanPy; # Give postgres a clean python3
-            }
-          ).withPackages
-            (
-              ps: with ps; [
-                # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
-                # Our own extensions are not, so we need to override postgresql with our version here
-                (pgmq.override { postgresql = pg; })
-                (pllua.override { postgresql = pg; })
-                pg_cron
-                pg_safeupdate
-                pg_similarity
-                pg_squeeze
-                pgaudit
-                pgrouting
-                plpgsql_check
-                plv8
-                postgis
-                timescaledb
-                timescaledb_toolkit
-              ]
-            );
+        ourPg = pg.withPackages (
+          ps: with ps; [
+            # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
+            # Our own extensions are not, so we need to override postgresql with our version here
+            (pgmq.override { postgresql = pg; })
+            (pllua.override { postgresql = pg; })
+            pg_cron
+            pg_safeupdate
+            pg_similarity
+            pg_squeeze
+            pgaudit
+            pgrouting
+            plpgsql_check
+            plv8
+            postgis
+            timescaledb
+            timescaledb_toolkit
+          ]
+        );
 
         debugPkgs = with pkgs; [
           # debug CLI utils
@@ -132,6 +133,7 @@
 
           # Export pgmq as a package
           inherit pgmq;
+          inherit pgPy ourPg;
         };
 
         # Export nixpkgs, lib and inputs for troubleshooting with nix repl
