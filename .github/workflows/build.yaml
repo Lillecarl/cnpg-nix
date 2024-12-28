@@ -4,9 +4,12 @@ on:
     branches: [main]
 
 jobs:
-  lints:
+  nixbuild:
     name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
