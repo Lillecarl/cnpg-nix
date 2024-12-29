@@ -14,7 +14,24 @@
           inherit system;
           # nixpkgs cache doesn't cache unfree packages. Timescale Toolkit is unfree and really slow to build.
           config.allowUnfree = true;
-          overlays = [ ];
+          overlays = [
+            (final: prev: {
+              # Update Barman and disable tests.
+              # We're using release versions of Barman and the tests failing
+              # are relateed to some datetime functions within the tests.
+              barman = prev.barman.overrideAttrs (pattrs: rec {
+                version = "3.12.1";
+                src = pkgs.fetchFromGitHub {
+                  owner = "EnterpriseDB";
+                  repo = "barman";
+                  rev = "refs/tags/release/${version}";
+                  sha256 = "sha256-uYyRLAFvuStyiKba1Js4kYjYLoLEgESnUaGMpsVYpZI=";
+                };
+                doCheck = false;
+                doInstallCheck = false;
+              });
+            })
+          ];
         };
         dockerUtils = import ./dockerUtils.nix pkgs;
         # shorthand for lib since we don't get it from NixOS modules
@@ -24,7 +41,7 @@
         # clean Python3, postgres will depend on this
         cleanPy = pkgs.python3Minimal;
         # python3 with packages installed, we just make them available with PYTHONPATH
-        packagePy = pkgs.python3.withPackages (
+        packagePy = cleanPy.withPackages (
           ps: with ps; [
             numpy
             psycopg2
@@ -34,6 +51,7 @@
         pgmq = pkgs.callPackage ./pkgs/pgmq.nix { };
         # pllua packaged
         pllua = pkgs.callPackage ./pkgs/pllua.nix { };
+        # updated barman
 
         # Override to enable Python support
         pgPy =
@@ -137,8 +155,9 @@
         };
 
         # Export nixpkgs, lib and inputs for troubleshooting with nix repl
-        inherit pkgs inputs;
+        inherit inputs;
         inherit (pkgs) lib;
+        legacyPackages = pkgs;
       }
     );
 }
