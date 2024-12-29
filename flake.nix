@@ -39,7 +39,7 @@
         # postgres version
         pg = pkgs.postgresql_17;
         # clean Python3, postgres will depend on this
-        cleanPy = pkgs.python3Minimal;
+        cleanPy = pkgs.python3;
         # python3 with packages installed, we just make them available with PYTHONPATH
         packagePy = cleanPy.withPackages (
           ps: with ps; [
