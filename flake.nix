@@ -31,6 +31,16 @@
                 doCheck = false;
                 doInstallCheck = false;
               });
+              pllua = prev.callPackage ./pllua.nix {
+                lua = prev.lua5_4.override {
+                  version = "5.4.7";
+                  hash = "sha256-n79eKO+GxphY9tPTTszDLpEcGii0Eg/z6EqqcM+/HjA=";
+                };
+              };
+              plprql = prev.callPackage ./plprql.nix { };
+              pg_graphql = prev.callPackage ./pg_graphql.nix { };
+              pg_jsonschema = prev.callPackage ./pg_jsonschema.nix { };
+              pg_analytics = prev.callPackage ./pg_analytics.nix { };
             })
           ];
         };
@@ -48,11 +58,6 @@
             psycopg2
           ]
         );
-        # pgmq packaged
-        pgmq = pkgs.callPackage ./pkgs/pgmq.nix { };
-        # pllua packaged
-        pllua = pkgs.callPackage ./pkgs/pllua.nix { };
-        # updated barman
 
         # Override to enable Python support
         pgPy =
@@ -68,17 +73,26 @@
           ps: with ps; [
             # nixpkgs extensions are already following the correct PG version since we get through pg.withPackages
             # Our own extensions are not, so we need to override postgresql with our version here
-            (pgmq.override { postgresql = pg; })
+            (pg_analytics.override { postgresql = pg; })
+            (pg_graphql.override { postgresql = pg; })
+            (pg_jsonschema.override { postgresql = pg; })
             (pllua.override { postgresql = pg; })
+            (plprql.override { postgresql = pg; })
+            hypopg
             pg_cron
+            pg_partman
             pg_safeupdate
             pg_similarity
             pg_squeeze
             pgaudit
+            pgmq
             pgrouting
+            pgvector
+            plpgsql_check
             plpgsql_check
             plv8
             postgis
+            system_stats
             timescaledb
             timescaledb_toolkit
           ]
@@ -150,8 +164,6 @@
             inherit config;
           };
 
-          # Export pgmq as a package
-          inherit pgmq;
           inherit pgPy ourPg;
         };
 
