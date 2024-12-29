@@ -20,6 +20,7 @@
               # We're using release versions of Barman and the tests failing
               # are relateed to some datetime functions within the tests.
               barman = prev.barman.overrideAttrs (pattrs: rec {
+                name = "${pattrs.pname}-${version}";
                 version = "3.12.1";
                 src = pkgs.fetchFromGitHub {
                   owner = "EnterpriseDB";
